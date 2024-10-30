@@ -21,7 +21,7 @@
 
 Run YOLOv11 instance segmentation models.
 
-![illustration nstance segmentation](https://raw.githubusercontent.com/Ikomia-hub/infer_yolo_v11_seg/main/icons/output.jpg)
+![illustration nstance segmentation](https://raw.githubusercontent.com/Ikomia-hub/infer_yolo_v11_seg/main/images/output.jpg)
 
 
 ## :rocket: Use with Ikomia API
