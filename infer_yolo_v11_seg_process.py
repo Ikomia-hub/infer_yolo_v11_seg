@@ -1,6 +1,7 @@
 import copy
 import os
 
+import numpy as np
 import torch
 
 from ikomia import core, dataprocess, utils
@@ -101,15 +102,18 @@ class InferYoloV11Seg(dataprocess.CInstanceSegmentationTask):
 
     def _load_model(self):
         param = self.get_param_object()
-        self.device = torch.device("cuda") if param.cuda and torch.cuda.is_available() else torch.device("cpu")
+        self.device = torch.device(
+            "cuda") if param.cuda and torch.cuda.is_available() else torch.device("cpu")
         self.half = True if param.cuda and torch.cuda.is_available() else False
 
         if param.model_weight_file:
             self.model = YOLO(param.model_weight_file)
         else:
             # Set path
-            model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "weights")
-            model_weights = os.path.join(str(model_folder), f'{param.model_name}.pt')
+            model_folder = os.path.join(os.path.dirname(
+                os.path.realpath(__file__)), "weights")
+            model_weights = os.path.join(
+                str(model_folder), f'{param.model_name}.pt')
 
             # Download model if not exist
             if not os.path.isfile(model_weights):
@@ -123,6 +127,15 @@ class InferYoloV11Seg(dataprocess.CInstanceSegmentationTask):
     def init_long_process(self):
         self._load_model()
         super().init_long_process()
+
+    def _prepare_image(self, image):
+        image = np.asarray(image)
+        if image.ndim == 2:
+            image = np.repeat(image[:, :, None], 3, axis=2)
+        elif image.ndim == 3 and image.shape[2] == 4:
+            image = image[:, :, :3]
+
+        return np.ascontiguousarray(image)
 
     def run(self):
         # Call begin_task_run() for initialization
@@ -139,12 +152,13 @@ class InferYoloV11Seg(dataprocess.CInstanceSegmentationTask):
 
         # Get image from input/output (numpy array):
         ini_src_image = img_input.get_image()
+        image = self._prepare_image(ini_src_image)
 
         # Resize image to input size and stride
         src_image, dw, dh = self.resize_to_stride(
-                                    image=ini_src_image,
-                                    imgsz=param.input_size
-                                    )
+            image=image,
+            imgsz=param.input_size
+        )
 
         # Load model
         if param.update:
@@ -214,7 +228,7 @@ class InferYoloV11SegFactory(dataprocess.CTaskFactory):
         self.info.short_description = "Inference with YOLOv11 segmentation models"
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Instance Segmentation"
-        self.info.version = "1.2.0"
+        self.info.version = "1.2.1"
         self.info.min_ikomia_version = "0.16.0"
         self.info.icon_path = "images/icon.png"
         self.info.authors = "Jocher, G., Chaurasia, A., & Qiu, J"
